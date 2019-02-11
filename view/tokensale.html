@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Transfer Sample</title>
+    <script type="text/javascript" src="https://code.jquery.com/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="https://cdn.rawgit.com/ethereum/web3.js/develop/dist/web3.js"></script>
+    <style>
+      body {margin-left:50px;}
+      #_chkAmount {font-size:100%; margin-right:10px;}
+      #_currentAmount {font-size:100%; margin-right:10px;}
+      #_estmatedTokenAmount {font-size:100%; margin-right:10px;}
+      #_estmatedTokenAmount_deposit {font-size:100%; margin-right:10px;}
+      #_result {font-size:100%; margin-right:10px;}
+    </style>
+</head>
+<body>
+<h2>Contract of Token sales</h2>
+<div>
+    <h3>Connect Contract</h3>
+    Crowd sale Contract Address : <input type="text" id="_crowdContractAddr" size="40"/></br>
+    Token Contract Address : <input type="text" id="_tokenContractAddr" size="40"/></br>
+    <button id="btnConnect">Connect</button>
+
+    <h3>Buy Token</h3>
+    Beneficiery : <input type="text" id="_beneficiery" size="40"/><br/>
+    Ether Amount : <input type="text" id="_etherAmount" size="20"/> Ether<br/>
+    Estimated Token Amount : <span id="_estmatedTokenAmount"></span> FXT<br/>
+    <button id="btnGetEstimated">Get Estimated Token Amount</button>          <button id="btnSendTransaction">Buy</button>
+
+    <h3>Transfer Token</h3>
+    From (address) : <input type="text" id="_fromAddr" size="40" readonly/><br/>
+    To (address)   : <input type="text" id="_toAddr" size="40"/><br/>
+    Amount : <input type="text" id="_txAmount" size="20"> FXT<br/>
+    Current Amount : <span id="_currentAmount"></span> FXT<br/>
+    <button id="btnCheck">Get Current Amount</button>
+    <button id="btnAppXmit">Approve Transaction</button>
+    <button id="btnTx">Transmit</button>
+
+    <h3>Check Token Amount</h3>
+    Target Address : <input type="text" id="_targetAddr" size="40"/><br/>
+    Amount : <span id="_chkAmount"></span> FXT<br/>
+    <button id="btnCheckMnt">Get Current Amount</button>
+
+  </br>
+  </br>
+    Result : <span id="_result"></span><br/>
+</div>
+
+<script type="text/javascript">
+//var web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
+//var web3 = new Web3(new Web3.providers.HttpProvider("http://192.168.1.11:8545"));
+var web3 = new Web3(web3.currentProvider);
+var crowd_abi = [{"constant":true,"inputs":[],"name":"getTotalFundsRaised","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[],"name":"claimTokenOwnership","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"EXCHANGE_RATE","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"rate","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"weiRaised","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[],"name":"finalize","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[],"name":"claimOwnership","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"wallet","outputs":[{"name":"","type":"address"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"_fiatRaisedConvertedToWei","type":"uint256"}],"name":"setFiatRaisedConvertedToWei","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"getRate","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"isFinalized","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"owner","outputs":[{"name":"","type":"address"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"fiatRaisedConvertedToWei","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"MAX_TOKEN_GRANTEES","outputs":[{"name":"","type":"uint8"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"pendingOwner","outputs":[{"name":"","type":"address"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"beneficiary","type":"address"}],"name":"buyTokens","outputs":[],"payable":true,"stateMutability":"payable","type":"function"},{"constant":false,"inputs":[{"name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"token","outputs":[{"name":"","type":"address"}],"payable":false,"stateMutability":"view","type":"function"},{"inputs":[{"name":"_fuzexSmartToken","type":"address"}],"payable":false,"stateMutability":"nonpayable","type":"constructor"},{"payable":true,"stateMutability":"payable","type":"fallback"},{"anonymous":false,"inputs":[{"indexed":true,"name":"_grantee","type":"address"},{"indexed":false,"name":"_amount","type":"uint256"}],"name":"GrantAdded","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"_grantee","type":"address"},{"indexed":false,"name":"_oldAmount","type":"uint256"},{"indexed":false,"name":"_newAmount","type":"uint256"}],"name":"GrantUpdated","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"_grantee","type":"address"},{"indexed":false,"name":"_hadAmount","type":"uint256"}],"name":"GrantDeleted","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"_address","type":"address"},{"indexed":false,"name":"_fiatRaised","type":"uint256"}],"name":"FiatRaisedUpdated","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"purchaser","type":"address"},{"indexed":true,"name":"beneficiary","type":"address"},{"indexed":false,"name":"value","type":"uint256"},{"indexed":false,"name":"amount","type":"uint256"}],"name":"TokenPurchaseWithGuarantee","type":"event"},{"anonymous":false,"inputs":[],"name":"Finalized","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"previousOwner","type":"address"},{"indexed":true,"name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"purchaser","type":"address"},{"indexed":true,"name":"beneficiary","type":"address"},{"indexed":false,"name":"value","type":"uint256"},{"indexed":false,"name":"amount","type":"uint256"}],"name":"TokenPurchase","type":"event"}];
+
+var token_abi = [{"constant":true,"inputs":[],"name":"mintingFinished","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"name","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"_spender","type":"address"},{"name":"_value","type":"uint256"}],"name":"approve","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_disable","type":"bool"}],"name":"disableTransfers","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"totalSupply","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"_from","type":"address"},{"name":"_to","type":"address"},{"name":"_value","type":"uint256"}],"name":"transferFrom","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"_to","type":"address"},{"name":"_amount","type":"uint256"}],"name":"mint","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[],"name":"claimOwnership","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_enable","type":"bool"}],"name":"setDestroyEnabled","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_spender","type":"address"},{"name":"_subtractedValue","type":"uint256"}],"name":"decreaseApproval","outputs":[{"name":"success","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[],"name":"finishMinting","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_to","type":"address"},{"name":"_amount","type":"uint256"}],"name":"issue","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"owner","outputs":[{"name":"","type":"address"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"symbol","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"_from","type":"address"},{"name":"_amount","type":"uint256"}],"name":"destroy","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"_to","type":"address"},{"name":"_value","type":"uint256"}],"name":"transfer","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"transfersEnabled","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"holder","type":"address"},{"name":"time","type":"uint64"}],"name":"transferableTokens","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"_spender","type":"address"},{"name":"_addedValue","type":"uint256"}],"name":"increaseApproval","outputs":[{"name":"success","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[{"name":"_owner","type":"address"},{"name":"_spender","type":"address"}],"name":"allowance","outputs":[{"name":"remaining","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"destroyEnabled","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"pendingOwner","outputs":[{"name":"","type":"address"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"inputs":[],"payable":false,"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":false,"name":"_token","type":"address"}],"name":"NewSmartToken","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"name":"_amount","type":"uint256"}],"name":"Issuance","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"name":"_amount","type":"uint256"}],"name":"Destruction","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"to","type":"address"},{"indexed":false,"name":"amount","type":"uint256"}],"name":"Mint","type":"event"},{"anonymous":false,"inputs":[],"name":"MintFinished","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"previousOwner","type":"address"},{"indexed":true,"name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"owner","type":"address"},{"indexed":true,"name":"spender","type":"address"},{"indexed":false,"name":"value","type":"uint256"}],"name":"Approval","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"from","type":"address"},{"indexed":true,"name":"to","type":"address"},{"indexed":false,"name":"value","type":"uint256"}],"name":"Transfer","type":"event"}];
+
+var crowdaddr = "0x7443a407fd666242e9b0316f7c85375a480c97b3";
+var tokenaddr = "0x7997d8be01fb5ca48430cb5906f584a68c5a2bc6";
+var CrowdContract = web3.eth.contract(crowd_abi);
+var TokenContract = web3.eth.contract(token_abi);
+var crowd = null;
+var token = null;
+var tmpAmount = 0;
+var devisionRate = 1;
+$('#_crowdContractAddr').val(crowdaddr);
+$('#_tokenContractAddr').val(tokenaddr);
+crowd = CrowdContract.at($('#_crowdContractAddr').val());
+token = TokenContract.at($('#_tokenContractAddr').val());
+var tokenPurchaseEvent = crowd.TokenPurchase();
+var tokenTransferEvent = token.Transfer();
+
+tokenPurchaseEvent.watch(function(error, result){
+    if(!error){
+        $('#_accountId').val(web3.eth.accounts[0]);
+        token.balanceOf(web3.eth.accounts[0], function(e,r){
+            amount = web3.fromWei(r.toNumber());
+            document.getElementById('_currentAmount').innerHTML = amount;
+            document.getElementById('_chkAmount').innerHTML = amount;
+        });
+        document.getElementById('_result').innerHTML = "Complete";
+    } else {
+        document.getElementById('_result').innerHTML = "Err";
+    }
+});
+
+tokenTransferEvent.watch(function(error, result){
+    if(!error){
+        $('#_accountId').val(web3.eth.accounts[0]);
+        token.balanceOf(web3.eth.accounts[0], function(e,r){
+            amount = web3.fromWei(r.toNumber());
+            document.getElementById('_currentAmount').innerHTML = amount;
+            document.getElementById('_chkAmount').innerHTML = amount;
+        });
+        document.getElementById('_result').innerHTML = "Complete";
+    } else {
+        document.getElementById('_result').innerHTML = "Err";
+    }
+});
+
+$(document).ready(function() {
+    // Unlock First Account
+    //web3.personal.unlockAccount(web3.eth.accounts[0],'1111');
+    console.log("UNLOCKED");
+    $('#btnConnect').click(function(){
+        crowd = CrowdContract.at($('#_crowdContractAddr').val());
+        token = TokenContract.at($('#_tokenContractAddr').val());
+        if(crowd != null && token != null) {
+          var tmpAddr = web3.eth.accounts[0];
+          $('#_beneficiery').val(tmpAddr);
+          $('#_beneficiery_deposit').val(tmpAddr);
+          $('#_fromAddr').val(tmpAddr);
+          $('#_targetAddr').val(tmpAddr);
+          var amount = 0;
+          token.balanceOf(tmpAddr, function(e,r){
+              amount = web3.fromWei(r.toNumber());
+              document.getElementById('_chkAmount').innerHTML = amount;
+              document.getElementById('_currentAmount').innerHTML = amount;
+          });
+          document.getElementById('_result').innerHTML = "Complete";
+        } else {
+          document.getElementById('_result').innerHTML = "Err";
+        }
+    });
+
+    $('#btnGetEstimated').click(function(){
+        var address = $('#_beneficiery').val();
+        var tmpEther = $('#_etherAmount').val();
+        var currRate = 0;
+        crowd.getRate(function(e,r){
+            currRate = r;
+            document.getElementById('_estmatedTokenAmount').innerHTML = currRate * tmpEther;
+        });
+    });
+
+    $('#btnSendTransaction').click(function(){
+        var address = $('#_beneficiery').val();
+        var tmpAmount = web3.toWei($('#_etherAmount').val());
+        document.getElementById('_result').innerHTML = "Pending...";
+        crowd.buyTokens.sendTransaction(address, {value:tmpAmount}, function(e,r){
+      });
+    });
+
+    $('#btnCheck').click(function(){
+      var tmpAddr = web3.eth.accounts[0];
+      var amount = 0;
+      token.balanceOf(tmpAddr, function(e,r){
+          amount = web3.fromWei(r.toNumber());
+          document.getElementById('_currentAmount').innerHTML = amount;
+      });
+    });
+    $('#btnAppXmit').click(function(){
+      var toAddr = $('#_toAddr').val();
+      var tmpAmount = web3.toWei($('#_txAmount').val());
+      document.getElementById('_result').innerHTML = "Pending...";
+      token.approve(toAddr, tmpAmount, function(e,r){});
+    });
+
+    $('#btnTx').click(function(){
+      var toAddr = $('#_toAddr').val();
+      var tmpAmount = web3.toWei($('#_txAmount').val());
+      document.getElementById('_result').innerHTML = "Pending...";
+      token.transfer(toAddr, tmpAmount, function(e,r){});
+    });
+
+    $('#btnCheckMnt').click(function(){
+      var tmpAddr = $('#_targetAddr').val();
+      var amount = 0;
+      token.balanceOf(tmpAddr, function(e,r){
+          amount = web3.fromWei(r.toNumber());
+          document.getElementById('_chkAmount').innerHTML = amount;
+      });
+    });
+});
+</script>
+</body>
+</html>

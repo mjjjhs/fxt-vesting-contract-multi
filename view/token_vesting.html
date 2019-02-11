@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Token Vesting</title>
+        <script type="text/javascript" src="https://code.jquery.com/jquery-1.11.0.min.js"></script>
+        <script type="text/javascript" src="https://cdn.rawgit.com/ethereum/web3.js/develop/dist/web3.js"></script>
+        <style>
+            body {margin-left:50px;}
+            #_chkAmount {font-size:100%; margin-right:10px;}
+            #_getVestedAmount {font-size:100%; margin-right:10px;}
+            #_releasableAmount {font-size:100%; margin-right:10px;}
+            #_result {font-size:100%; margin-right:10px;}
+        </style>
+    </head>
+    <body>
+        <h2>Contract of Token Vesting</h2>
+        <div>
+            <h3>Connect Contract</h3>
+            Vesting Contract Address : <input type="text" id="_vestingContractAddr" size="40"/></br>
+            <button id="btnConnect">Connect</button>
+
+            <h3>Check Available Amount</h3>
+            Amount : <input type="text" id="_chkAvailableAmount" size="20"/> FXT<br/>
+            Result : <span id="_chkAmount"></span><br/>
+            <button id="btnCheckAmount">Check</button>
+
+            <h3>Beneficiery Registration</h3>
+            Beneficiery (address) : <input type="text" id="_vestBeneficiary" size="40"/><br/>
+            Cliff Time : <input type="text" id="_cliff" size="20"/> Minutes<br/>
+            Duration : <input type="text" id="_duration" size="20"/> Minutes<br/>
+            Period Unit : <input type="text" id="_periodUnit" size="20"/> Minutes<br/>
+            Token Amount : <input type="text" id="_vestAmount" size="20"/> FXT<br/>
+            <button id="btnRegist">Regist</button>
+            <button id="btnStart">Start Vesting</button>
+
+            <h3>Get Beneficiery Information</h3>
+            Beneficiery (address) : <input type="text" id="_getInfoBeneficiary" size="40"/><br/>
+            Vested Amount : <span id="_getVestedAmount"></span>FXT<br/>
+            Releasable Amount : <span id="_releasableAmount"></span>FXT<br/>
+            <button id="btnGetInfo">Get Amount</button>
+            <button id="btnRelease">Send Releasable token</button>
+            <button id="btnRevoke">Revoke Vesting</button>
+            </br>
+            </br>
+            Result : <span id="_result"></span><br/>
+        </div>
+    </body>
+    <script type="text/javascript">
+        //var web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:7545"));
+        //var web3 = new Web3(new Web3.providers.HttpProvider("http://192.168.1.11:8545"));
+        var web3 = new Web3(web3.currentProvider);
+        //var tokenaddr = "0x19cf715bb9e1c0ecec5fac7a5df4ee1422695072";
+        //var vestaddr = "0x39b2c3a5e8455550a17ab8caf2d7261a12f96212";
+        var vestaddr = "0xf428f676790f266da6203c910f1e4b3502ddad4b";//ropsten
+        $('#_vestingContractAddr').val(vestaddr);
+        var tmpAmount = 0;
+        var VestContract;
+        var vest;
+        var vest_abi;
+        var vestingRegistEvent;
+        var vestingStartEvent;
+        var vestingReleasedEvent;
+
+        $.ajax({
+            dataType: "json",
+            url: "http://localhost/TokenVesting.json",
+            success: function(resp){
+                vest_abi = resp.abi;
+                console.log(vest_abi);
+                VestContract = web3.eth.contract(vest_abi);
+                vest = VestContract.at($('#_vestingContractAddr').val());
+                vestingRegistEvent = vest.Registered();
+                vestingStartEvent = vest.Start();
+                vestingReleasedEvent = vest.Released();
+
+                vestingRegistEvent.watch(function(error, result){
+                    if(!error){
+                        document.getElementById('_result').innerHTML = "Complete";
+                    } else {
+                        document.getElementById('_result').innerHTML = "Err";
+                    }
+                });
+
+                vestingStartEvent.watch(function(error, result){
+                    if(!error){
+                        document.getElementById('_result').innerHTML = "Complete";
+                    } else {
+                        document.getElementById('_result').innerHTML = "Err";
+                    }
+                });
+
+                vestingReleasedEvent.watch(function(error, result){
+                    if(!error){
+                        document.getElementById('_result').innerHTML = "Complete";
+                    } else {
+                        document.getElementById('_result').innerHTML = "Err";
+                    }
+                });
+            }
+        });
+
+        $(document).ready(function() {
+            // Unlock First Account
+            //web3.personal.unlockAccount(web3.eth.accounts[0],'1111');
+            $('#btnConnect').click(function(){
+                vest = VestContract.at($('#_vestingContractAddr').val());
+
+                if(vest != null) {
+                    var tmpAddr = web3.eth.accounts[0];
+                    $('#_getInfoBeneficiary').val(tmpAddr);
+                    document.getElementById('_result').innerHTML = "Complete";
+                } else {
+                    document.getElementById('_result').innerHTML = "Err";
+                }
+            });
+
+            $('#btnCheckAmount').click(function(){
+                var tmpAmount = web3.toWei($('#_chkAvailableAmount').val());
+                vest.checkAmount(tmpAmount, function(e,r){
+                    document.getElementById('_chkAmount').innerHTML = r;
+                });
+            });
+
+            $('#btnRegist').click(function(){
+                var tmpAddr = $('#_vestBeneficiary').val();
+                var cliffIn = $('#_cliff').val();
+                var durationIn = $('#_duration').val();
+                var periodUnit = $('#_periodUnit').val();
+                var amountIn = web3.toWei($('#_vestAmount').val());
+                var gasPrice;
+                var gasLimit;
+                web3.eth.getGasPrice(function(e,r){
+                    gasPrice = r.toNumber();
+                    console.log(r);
+                    vest.setBeneficiary.estimateGas(tmpAddr, cliffIn, durationIn, periodUnit, amountIn, {from: web3.eth.accounts[0]}, function(e,r){
+                        gasLimit = r;
+                        console.log(r);
+                        document.getElementById('_result').innerHTML = "Pending...";
+                        vest.setBeneficiary(tmpAddr, cliffIn, durationIn, periodUnit, amountIn, {gasPrice: gasPrice, gas: gasLimit}, function(e,r){
+                            if(e){
+                                document.getElementById('_result').innerHTML = "err";
+                            } else {
+                                document.getElementById('_result').innerHTML = "success";
+                            }
+                        });
+                    });
+                });
+            });
+
+            $('#btnStart').click(function(){
+                var tmpAddr = $('#_vestBeneficiary').val();
+                var gasPrice;
+                var gasLimit;
+                web3.eth.getGasPrice(function(e,r){
+                    gasPrice = r.toNumber();
+                    console.log(r);
+                    vest.setStart.estimateGas(tmpAddr, {from: web3.eth.accounts[0]}, function(e,r){
+                        gasLimit = r;
+                        console.log(r);
+                        document.getElementById('_result').innerHTML = "Pending...";
+                        vest.setStart(tmpAddr, {gasPrice: gasPrice, gas: gasLimit}, function(e,r){
+                            if(e){
+                                document.getElementById('_result').innerHTML = "err";
+                            } else {
+                                document.getElementById('_result').innerHTML = "success";
+                            }
+                        });
+                    });
+                });
+            });
+
+            $('#btnGetInfo').click(function(){
+                var tmpAddr = $('#_getInfoBeneficiary').val();
+                var vested = 0;
+                var released = 0;
+                document.getElementById('_getVestedAmount').innerHTML = "";
+                document.getElementById('_releasableAmount').innerHTML = "";
+                vest.vestedAmount(tmpAddr, function(e,r){
+                    vested = web3.fromWei(r.toNumber());
+                    document.getElementById('_getVestedAmount').innerHTML = vested;
+                    vest.releasableAmount(tmpAddr, function(e,r){
+                        released = web3.fromWei(r.toNumber());
+                        document.getElementById('_releasableAmount').innerHTML = released;
+                    });
+                });
+
+
+            });
+
+            $('#btnRelease').click(function(){
+                var tmpAddr = $('#_getInfoBeneficiary').val();
+                var gasPrice;
+                var gasLimit;
+                web3.eth.getGasPrice(function(e,r){
+                    gasPrice = r.toNumber();
+                    console.log(r);
+                    vest.release.estimateGas(tmpAddr, {from: web3.eth.accounts[0]}, function(e,r){
+                        gasLimit = r;
+                        console.log(r);
+                        document.getElementById('_result').innerHTML = "Pending...";
+                        vest.release(tmpAddr, {gasPrice: gasPrice, gas: gasLimit}, function(e,r){
+                            if(e){
+                                document.getElementById('_result').innerHTML = "err";
+                            } else {
+                                document.getElementById('_result').innerHTML = "success";
+                            }
+                        });
+                    });
+                });
+            });
+
+            $('#btnRevoke').click(function(){
+                var tmpAddr = $('#_getInfoBeneficiary').val();
+                var gasPrice;
+                var gasLimit;
+                web3.eth.getGasPrice(function(e,r){
+                    gasPrice = r.toNumber();
+                    console.log(r);
+                    vest.revoke.estimateGas(tmpAddr, {from: web3.eth.accounts[0]}, function(e,r){
+                        gasLimit = r;
+                        console.log(r);
+                        document.getElementById('_result').innerHTML = "Pending...";
+                        vest.revoke(tmpAddr, {gasPrice: gasPrice, gas: gasLimit}, function(e,r){
+                            if(e){
+                                document.getElementById('_result').innerHTML = "err";
+                            } else {
+                                document.getElementById('_result').innerHTML = "success";
+                            }
+                        });
+                    });
+                });
+            });
+        });
+
+    </script>
+</html>
